@@ -86,8 +86,6 @@ class RMAPI
             // Reset the class variables if there's an error
             $this->api_token = null;
             $this->headers = [];
-            
-            return null;
         }
 
         // The URI we can get an auth token from, and the JSON body to send
@@ -116,8 +114,11 @@ class RMAPI
 
         // Format the token and set our class variables
         $token = trim($response->getBody(), '\"');
-        $this->headers['X-RM12Api-ApiToken'] = $token;
         $this->api_token = $token;
+
+        // Set our headers variable
+        $headers['X-RM12Api-ApiToken'] = $token;
+        $this->headers = $headers;
     }
 
     /**
@@ -141,6 +142,7 @@ class RMAPI
 
             return false;
         }
+        
         // Example JSON variable -----------------------------------------------
         // $updateMarketRentJSON = "{                                           |
         //     \"MarketRentID\": \"$marketRentID\",                             |
@@ -166,10 +168,9 @@ class RMAPI
 
         // Send our POST request
         try {
-            $headers = ['Content-Type' => 'application/json', 'X-RM12Api-ApiToken' => $this->headers['X-RM12Api-ApiToken']];
             $this->client->post($uri, [
                 'body'      => $json,
-                'headers'   => $headers
+                'headers'   => $this->headers
             ]);
             
             return true;
@@ -208,7 +209,6 @@ class RMAPI
 
         // Define our final return variable
         $final_ret = [];
-
         
         // Example URI variable ------------------------------------------------
         // $uri = '/Amenities';                                                 |
@@ -223,10 +223,11 @@ class RMAPI
             $get_uri = rtrim('/', $get_uri) . "?PageSize=$pagesize&PageNumber=";
             while (true) 
             {
+                // Send the GET request
                 try {
-                    // Send the request
+                    $headers = ['Content-Type' => 'application/json', 'X-RM12Api-ApiToken' => $this->headers['X-RM12Api-ApiToken'] ?? $this->api_token];
                     $response = $this->client->get($get_uri . $itter, [
-                        'headers' => $this->headers
+                        'headers' => $headers
                     ]);
                 } catch (ClientException $e) {
                     Log::error($e->getMessage());
