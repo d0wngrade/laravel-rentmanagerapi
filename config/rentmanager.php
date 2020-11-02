@@ -42,7 +42,7 @@ return [
         | Your Rent Manager API's base URI ( Like: 'https://yoursubdomain.api.rentmanager.com/' )
         |
         */
-        'rentmanager.base_uri'  => getenv('RENTMANAGER_API_BASE_URI', '')
+        'base_uri'  => getenv('RENTMANAGER_API_BASE_URI', '')
 
     ]
     
