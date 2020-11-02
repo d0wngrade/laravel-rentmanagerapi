@@ -54,7 +54,7 @@ class RMAPI
      *
      * @return bool
      */
-    public function verifyClient() : bool
+    protected function verifyClient() : bool
     {
         if (empty($this->client)) 
         {
@@ -76,7 +76,7 @@ class RMAPI
      *
      * @return void
      */
-    public function authenticate()
+    protected function authenticate() : void
     {
         // Make sure we have a valid client object
         if(!$this->verifyClient()) 
@@ -86,6 +86,8 @@ class RMAPI
             // Reset the class variables if there's an error
             $this->api_token = null;
             $this->headers = [];
+            
+            return null;
         }
 
         // The URI we can get an auth token from, and the JSON body to send
@@ -114,11 +116,41 @@ class RMAPI
 
         // Format the token and set our class variables
         $token = trim($response->getBody(), '\"');
+        $this->headers['X-RM12Api-ApiToken'] = $token;
         $this->api_token = $token;
+    }
 
-        // Set our headers variable
-        $headers['X-RM12Api-ApiToken'] = $token;
-        $this->headers = $headers;
+    /**
+     * Update the local class API variables.
+     *
+     * @param array $headers Optional headers to pass
+     * @param bool $force If this is true the class headers will be forced to overwrite
+     * @return array Updated header array
+     */
+    public function updateHeaders(array $headers = [], bool $force = false) : array
+    {
+        // Check variables
+        if((empty($headers) || empty($headers['Content-Type']) || empty($headers['X-RM12Api-ApiToken'])) && !$force)
+        {
+            // Authenticate if we can't find a token
+            if(empty($this->api_token) && empty($this->headers['X-RM12Api-ApiToken'])) $this->authenticate();
+            
+            // Create a headers variable to update with
+            $update_headers = [
+                'Content-Type' => 'application/json',
+                'X-RM12Api-ApiToken' => $this->headers['X-RM12Api-ApiToken'] ?? $this->api_token
+            ];
+        } elseif($force) {
+            // If force is true we just let them override it
+            $update_headers = $headers;
+        } else {
+            // Just return the current headers if we don't need to update them
+            return $this->headers;
+        }
+
+        // Set the new headers and return the variable
+        $this->headers = $update_headers;
+        return $update_headers;
     }
 
     /**
@@ -126,11 +158,11 @@ class RMAPI
      * 
      * See variable examples in the function's comments
      *
-     * @param string $json The JSON formatted for the POST request
      * @param string $uri
+     * @param string $json The JSON formatted for the POST request
      * @return bool
      */
-    public function post($json, $uri) : bool
+    public function post(string $uri, string $json) : bool
     {
         if (!$this->verifyClient()) 
         {
@@ -142,7 +174,6 @@ class RMAPI
 
             return false;
         }
-        
         // Example JSON variable -----------------------------------------------
         // $updateMarketRentJSON = "{                                           |
         //     \"MarketRentID\": \"$marketRentID\",                             |
@@ -166,11 +197,14 @@ class RMAPI
             return false;
         }
 
-        // Send our POST request
         try {
+            // Set required $headers variable
+            $headers = $this->updateHeaders();
+            
+            // Send our POST request
             $this->client->post($uri, [
                 'body'      => $json,
-                'headers'   => $this->headers
+                'headers'   => $headers
             ]);
             
             return true;
@@ -180,7 +214,7 @@ class RMAPI
                 Log::error("RentManagerAPI Error: Unauthorized");
                 return false;
             } else {
-                // Log::error(strval($e->getMessage()));
+                Log::error(strval($e->getMessage()));
                 return false;
             }
         }
@@ -189,9 +223,9 @@ class RMAPI
     /**
      * Send a GET request to the URI and return the response as an array
      *
-     * @param string $uri
-     * @param bool $paginate    If this is true the URI will be appended with "?PageSize=$pagesize&PageNumber=" for iteration
-     * @param int $pagesize     The page size for pagination
+     * @param string $uri The URI to send the requesy to, prepended with config('rentmanager.base_uri)
+     * @param bool $paginate If this is true the URI will be appended with "?PageSize=$pagesize&PageNumber=" for iteration
+     * @param int $pagesize The page size for pagination
      * @return array
      */
     public function get($uri, $paginate = false, $pagesize = 50) : array
@@ -209,6 +243,7 @@ class RMAPI
 
         // Define our final return variable
         $final_ret = [];
+
         
         // Example URI variable ------------------------------------------------
         // $uri = '/Amenities';                                                 |
@@ -223,9 +258,11 @@ class RMAPI
             $get_uri = rtrim('/', $get_uri) . "?PageSize=$pagesize&PageNumber=";
             while (true) 
             {
-                // Send the GET request
                 try {
-                    $headers = ['Content-Type' => 'application/json', 'X-RM12Api-ApiToken' => $this->headers['X-RM12Api-ApiToken'] ?? $this->api_token];
+                    // Define a headers array
+                    $headers = $this->updateHeaders();
+
+                    // Send the request
                     $response = $this->client->get($get_uri . $itter, [
                         'headers' => $headers
                     ]);

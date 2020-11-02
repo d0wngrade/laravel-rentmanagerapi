@@ -8,7 +8,12 @@ class RentManagerServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        //
+        parent::register();
+
+        // $this->mergeConfigFrom(
+        //     __DIR__ . '/config/rentmanager.php',
+        //     'rentmanager'
+        // );
     }
 
     public function boot()

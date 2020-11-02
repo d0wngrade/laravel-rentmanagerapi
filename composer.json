@@ -1,10 +1,7 @@
 {
     "name": "zinapse/rentmanager",
-    "description": "A library that helps you authenticate and get/post data from the Rent Manager API.",
+    "description": "A library that helps you authenticate, and send GET/POST requests to the Rent Manager API.",
     "type": "library",
-    "require": {
-        "guzzlehttp/guzzle": "^7.2"
-    },
     "license": "MIT",
     "authors": [
         {
@@ -13,10 +10,13 @@
         }
     ],
     "minimum-stability": "stable",
+    "require": {
+        "guzzlehttp/guzzle": "^7.2",
+        "php": ">=5.6.4"
+    },
     "autoload": {
 	    "psr-4": {"zinapse\\": "src/"}
     },
-
     "extra": {
         "laravel": {
             "providers": [
