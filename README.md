@@ -1,5 +1,5 @@
 # `zinapse/laravel-rentmanagerapi`
-A library that helps you authenticate and get/post data from the Rent Manager API.
+A library that helps you authenticate and send GET/POST requests to the Rent Manager API.
 
 ## Docuentation
 ### Installation
